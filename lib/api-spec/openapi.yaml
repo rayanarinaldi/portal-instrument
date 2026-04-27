@@ -1,0 +1,230 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: calibration
+    description: Calibration records
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /calibrations:
+    get:
+      operationId: listCalibrations
+      tags: [calibration]
+      summary: List all calibration records
+      parameters:
+        - name: formType
+          in: query
+          schema:
+            type: string
+            enum: [control_valve, timbangan, rtd, ph, transmitter]
+        - name: tagNo
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of calibrations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CalibrationRecord"
+
+    post:
+      operationId: createCalibration
+      tags: [calibration]
+      summary: Create calibration record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCalibrationBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalibrationRecord"
+
+  /calibrations/{id}:
+    get:
+      operationId: getCalibration
+      tags: [calibration]
+      summary: Get calibration record by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Calibration record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalibrationRecord"
+        "404":
+          description: Not found
+
+    put:
+      operationId: updateCalibration
+      tags: [calibration]
+      summary: Update calibration record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCalibrationBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalibrationRecord"
+
+    delete:
+      operationId: deleteCalibration
+      tags: [calibration]
+      summary: Delete calibration record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /calibrations/summary:
+    get:
+      operationId: getCalibrationSummary
+      tags: [calibration]
+      summary: Get summary counts per form type
+      responses:
+        "200":
+          description: Summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalibrationSummary"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    CalibrationRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+        formType:
+          type: string
+          enum: [control_valve, timbangan, rtd, ph, transmitter]
+        tagNo:
+          type: string
+        date:
+          type: string
+        calibratedBy:
+          type: string
+        data:
+          type: object
+          description: JSON object containing all form-specific data
+          additionalProperties: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - formType
+        - data
+        - createdAt
+        - updatedAt
+
+    CreateCalibrationBody:
+      type: object
+      properties:
+        formType:
+          type: string
+          enum: [control_valve, timbangan, rtd, ph, transmitter]
+        tagNo:
+          type: string
+        date:
+          type: string
+        calibratedBy:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+      required:
+        - formType
+        - data
+
+    CalibrationSummary:
+      type: object
+      properties:
+        total:
+          type: integer
+        byType:
+          type: object
+          properties:
+            control_valve:
+              type: integer
+            timbangan:
+              type: integer
+            rtd:
+              type: integer
+            ph:
+              type: integer
+            transmitter:
+              type: integer
+          required:
+            - control_valve
+            - timbangan
+            - rtd
+            - ph
+            - transmitter
+      required:
+        - total
+        - byType

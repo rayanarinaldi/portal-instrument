@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Data Kalibrasi Instrument - Dongjin"
+version = "1.0.0"
+id = "artifacts/kalibrasi-dongjin"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20962
+
+[services.development]
+run = "pnpm --filter @workspace/kalibrasi-dongjin run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/kalibrasi-dongjin", "run", "build" ]
+publicDir = "artifacts/kalibrasi-dongjin/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20962"
+BASE_PATH = "/"
