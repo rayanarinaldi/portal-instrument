@@ -12,6 +12,12 @@ import {
   X,
   ShieldCheck,
   FileText,
+  BarChart3,
+  ClipboardCheck,
+  AlertTriangle,
+  CalendarDays,
+  ClipboardPenLine,
+  Database,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import {
@@ -22,14 +28,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import logo from "@/assets/logo-dongjin.png";
+import { hasRole, permissions, ROLE_LABELS as SHARED_ROLE_LABELS } from "@/lib/permissions";
+import { ThemeToggle } from "@/components/theme-toggle";
 
-const ROLE_LABELS: Record<string, string> = {
-  admin_it: "Admin IT",
-  section_chief: "Section Chief",
-  pic: "PIC",
-  foreman: "Foreman",
-  teknisi: "Teknisi",
-};
+const ROLE_LABELS = SHARED_ROLE_LABELS;
 
 export function Layout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
@@ -38,18 +40,39 @@ export function Layout({ children }: { children: ReactNode }) {
 
   const navigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
+    ...(hasRole(user?.role, permissions.monitoring)
+      ? [{ name: "Monitoring", href: "/monitoring", icon: BarChart3 }]
+      : []),
     { name: "All Records", href: "/records", icon: ClipboardList },
     { name: "New Record", href: "/new", icon: PlusCircle },
     { name: "History Card", href: "/history-card", icon: History },
     { name: "Report", href: "/reports", icon: FileText },
+    ...(hasRole(user?.role, permissions.preventiveView)
+      ? [{ name: "Preventive Checklist", href: "/preventive/checklist", icon: ClipboardCheck }]
+      : []),
+    ...(hasRole(user?.role, permissions.preventiveView)
+      ? [{ name: "Preventive Issues", href: "/preventive/issues", icon: AlertTriangle }]
+      : []),
+    ...(hasRole(user?.role, permissions.dailyReportForeman)
+      ? [{ name: "Daily Report Foreman", href: "/daily-report/foreman", icon: CalendarDays }]
+      : []),
+    ...(hasRole(user?.role, permissions.dailyReportSectionChief)
+      ? [{ name: "Daily Report Section Chief", href: "/daily-report/section-chief", icon: FileText }]
+      : []),
+    ...(hasRole(user?.role, permissions.logsheetShift)
+      ? [{ name: "Logsheet Shift", href: "/logsheet-shift", icon: ClipboardPenLine }]
+      : []),
+    ...(hasRole(user?.role, permissions.collectData)
+      ? [{ name: "Collect Data", href: "/collect-data", icon: Database }]
+      : []),
     ...(canManageUsers()
       ? [{ name: "Manage Users", href: "/users", icon: Users }]
       : []),
   ];
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-950">
-      <div className="sticky top-0 z-40 flex items-center justify-between border-b bg-white/95 px-4 py-3 backdrop-blur md:hidden print-hide">
+    <div className="min-h-screen bg-slate-100 text-slate-950 dark:bg-slate-950 dark:text-slate-100">
+      <div className="sticky top-0 z-40 flex items-center justify-between border-b bg-white/95 dark:border-slate-800 dark:bg-slate-950/95 px-4 py-3 backdrop-blur md:hidden print-hide">
         <div className="flex items-center gap-3">
           <img src={logo} alt="Dongjin" className="h-10 w-10 rounded-xl bg-white object-contain p-1 shadow" />
           <div>
@@ -175,10 +198,10 @@ export function Layout({ children }: { children: ReactNode }) {
         </aside>
 
         <main className="min-w-0 flex-1">
-          <div className="border-b bg-white/80 px-4 py-4 backdrop-blur sm:px-6 lg:px-8 print-hide">
+          <div className="border-b bg-white/80 px-4 py-4 backdrop-blur sm:px-6 lg:px-8 print-hide dark:border-slate-800 dark:bg-slate-950/80">
             <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
               <div>
-                <div className="text-sm font-bold text-slate-900">
+                <div className="text-sm font-bold text-slate-900 dark:text-white">
                   Calibration Management System
                 </div>
                 <div className="text-xs text-slate-500">
@@ -186,8 +209,11 @@ export function Layout({ children }: { children: ReactNode }) {
                 </div>
               </div>
 
-              <div className="hidden rounded-full border bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600 md:block">
-                {ROLE_LABELS[user?.role ?? ""] ?? user?.role}
+              <div className="flex items-center gap-3">
+                <ThemeToggle />
+                <div className="hidden rounded-full border bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 md:block">
+                  {ROLE_LABELS[user?.role ?? ""] ?? user?.role}
+                </div>
               </div>
             </div>
           </div>

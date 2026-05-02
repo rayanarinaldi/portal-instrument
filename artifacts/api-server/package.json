@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "set NODE_ENV=development&& pnpm run build && pnpm run start",
     "build": "node ./build.mjs",
-    "start": "node --enable-source-maps ./dist/index.mjs",
+    "start": "node --env-file=.env --enable-source-maps ./dist/index.mjs",
+    "start:prod": "node --env-file=.env --enable-source-maps ./dist/index.mjs",
+    "check:env": "node --env-file=.env -e \"console.log(process.env.DATABASE_URL ? 'DATABASE_URL OK' : 'DATABASE_URL MISSING')\"",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

@@ -46,12 +46,11 @@ export default function LoginPage() {
           </h1>
 
           <p className="mt-4 text-sm text-blue-100 max-w-sm">
-            Calibration Management System untuk monitoring, pencatatan,
-            dan pelaporan instrument secara digital.
+            Internal Instrument Department Portal for Report.
           </p>
 
           <div className="mt-8 flex gap-2 text-xs text-blue-100 flex-wrap justify-center">
-            {["Instrument", "Calibration", "Monitoring", "Reporting"].map((i) => (
+            {["Instrument", "Calibration", "Monitoring", "Reporting", "Preventive", "Logsheet"].map((i) => (
               <span key={i} className="px-3 py-1 rounded-full bg-white/10 border border-white/20">
                 {i}
               </span>
@@ -86,7 +85,7 @@ export default function LoginPage() {
               </span>
 
               <h2 className="text-3xl font-black mt-2 text-slate-900">
-                Login Sistem
+                Login
               </h2>
 
               <p className="text-sm text-slate-500">

@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsup src/index.ts --format esm --dts false --sourcemap --out-dir dist",
+    "start": "node --enable-source-maps ./dist/index.mjs",
+    "start:env": "node --env-file=.env --enable-source-maps ./dist/index.mjs",
+    "check:env": "node -e \"if(!process.env.DATABASE_URL){console.error('DATABASE_URL missing');process.exit(1)} console.log('DATABASE_URL OK')\""
+  }
+}

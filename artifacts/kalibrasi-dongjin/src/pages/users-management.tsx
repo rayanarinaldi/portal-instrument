@@ -1,12 +1,31 @@
+import { useState, type FormEvent } from "react";
 import { API_BASE } from "../lib/api";
-import { useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -18,7 +37,15 @@ const ROLE_LABELS: Record<string, string> = {
   pic: "PIC",
   foreman: "Foreman",
   teknisi: "Teknisi",
+  teknisi_shift: "Teknisi Shift",
+  teknisi_harian: "Teknisi Harian",
+  asst_manager: "Assistant Manager",
 };
+
+const ROLE_OPTIONS = Object.entries(ROLE_LABELS).map(([value, label]) => ({
+  value,
+  label,
+}));
 
 interface UserRecord {
   id: number;
@@ -27,25 +54,35 @@ interface UserRecord {
   role: string;
 }
 
-async function fetchUsers(): Promise<UserRecord[]> {
-  const token = localStorage.getItem("kalibrasi-token");
-
-  const res = await fetch(`${API_BASE}/users`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  if (!res.ok) throw new Error("Gagal memuat data pengguna");
-  return res.json();
-}
-
-async function createUser(data: {
+interface CreateUserPayload {
   name: string;
   username: string;
   password: string;
   role: string;
-}) 
-{
-  const token = localStorage.getItem("kalibrasi-token");
+}
+
+function getToken() {
+  return localStorage.getItem("kalibrasi-token");
+}
+
+async function fetchUsers(): Promise<UserRecord[]> {
+  const token = getToken();
+
+  const res = await fetch(`${API_BASE}/users`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error("Gagal memuat data pengguna");
+  }
+
+  return res.json();
+}
+
+async function createUser(data: CreateUserPayload): Promise<UserRecord> {
+  const token = getToken();
 
   const res = await fetch(`${API_BASE}/users`, {
     method: "POST",
@@ -57,7 +94,9 @@ async function createUser(data: {
   });
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: "Gagal membuat pengguna" }));
+    const err = await res
+      .json()
+      .catch(() => ({ error: "Gagal membuat pengguna" }));
     throw new Error(err.error || "Gagal membuat pengguna");
   }
 
@@ -65,7 +104,7 @@ async function createUser(data: {
 }
 
 async function deleteUser(id: number): Promise<void> {
-  const token = localStorage.getItem("kalibrasi-token");
+  const token = getToken();
 
   const res = await fetch(`${API_BASE}/users/${id}`, {
     method: "DELETE",
@@ -75,7 +114,9 @@ async function deleteUser(id: number): Promise<void> {
   });
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: "Gagal menghapus pengguna" }));
+    const err = await res
+      .json()
+      .catch(() => ({ error: "Gagal menghapus pengguna" }));
     throw new Error(err.error || "Gagal menghapus pengguna");
   }
 }
@@ -90,7 +131,7 @@ export default function UsersManagement() {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("teknisi");
 
-  const { data: users, isLoading } = useQuery({
+  const { data: users = [], isLoading } = useQuery({
     queryKey: ["users"],
     queryFn: fetchUsers,
   });
@@ -99,14 +140,21 @@ export default function UsersManagement() {
     mutationFn: createUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
-      toast({ title: "Berhasil", description: "Pengguna berhasil ditambahkan." });
+      toast({
+        title: "Berhasil",
+        description: "Pengguna berhasil ditambahkan.",
+      });
       setName("");
       setUsername("");
       setPassword("");
       setRole("teknisi");
     },
     onError: (err: Error) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -114,10 +162,17 @@ export default function UsersManagement() {
     mutationFn: deleteUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
-      toast({ title: "Dihapus", description: "Pengguna berhasil dihapus." });
+      toast({
+        title: "Dihapus",
+        description: "Pengguna berhasil dihapus.",
+      });
     },
-    onError: () => {
-      toast({ title: "Error", description: "Gagal menghapus pengguna.", variant: "destructive" });
+    onError: (err: Error) => {
+      toast({
+        title: "Error",
+        description: err.message || "Gagal menghapus pengguna.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -129,15 +184,28 @@ export default function UsersManagement() {
     );
   }
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!name || !username || !password || !role) return;
-    createMutation.mutate({ name, username, password, role });
+
+    if (!name.trim() || !username.trim() || !password.trim() || !role) {
+      toast({
+        title: "Data belum lengkap",
+        description: "Nama, username, password, dan role wajib diisi.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    createMutation.mutate({
+      name: name.trim(),
+      username: username.trim(),
+      password,
+      role,
+    });
   };
 
   return (
     <div className="space-y-6">
-      {/* HEADER */}
       <div className="space-y-1">
         <div className="flex items-center gap-2 text-muted-foreground">
           <Users className="h-4 w-4" />
@@ -149,7 +217,6 @@ export default function UsersManagement() {
         </p>
       </div>
 
-      {/* FORM */}
       <Card className="rounded-2xl shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -162,39 +229,58 @@ export default function UsersManagement() {
         </CardHeader>
 
         <CardContent>
-          <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form
+            onSubmit={handleCreate}
+            className="grid grid-cols-1 gap-4 md:grid-cols-2"
+          >
             <div className="space-y-1">
-              <Label>Nama</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} />
+              <Label htmlFor="name">Nama</Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Masukkan nama"
+              />
             </div>
 
             <div className="space-y-1">
-              <Label>Username</Label>
-              <Input value={username} onChange={(e) => setUsername(e.target.value)} />
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Masukkan username"
+              />
             </div>
 
             <div className="space-y-1">
-              <Label>Password</Label>
-              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Masukkan password"
+              />
             </div>
 
             <div className="space-y-1">
               <Label>Role</Label>
               <Select value={role} onValueChange={setRole}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Pilih role" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(ROLE_LABELS).map(([val, label]) => (
-                    <SelectItem key={val} value={val}>
-                      {label}
+                  {ROLE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="md:col-span-2 flex justify-end">
+            <div className="flex justify-end md:col-span-2">
               <Button type="submit" disabled={createMutation.isPending}>
                 {createMutation.isPending ? "Menyimpan..." : "Tambah"}
               </Button>
@@ -203,8 +289,7 @@ export default function UsersManagement() {
         </CardContent>
       </Card>
 
-      {/* TABLE */}
-      <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
+      <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/40">
@@ -218,13 +303,16 @@ export default function UsersManagement() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-10">
+                <TableCell colSpan={4} className="py-10 text-center">
                   Loading...
                 </TableCell>
               </TableRow>
-            ) : !users || users.length === 0 ? (
+            ) : users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-10 text-muted-foreground">
+                <TableCell
+                  colSpan={4}
+                  className="py-10 text-center text-muted-foreground"
+                >
                   Belum ada pengguna
                 </TableCell>
               </TableRow>
@@ -238,9 +326,11 @@ export default function UsersManagement() {
                   </TableCell>
                   <TableCell className="text-right">
                     <Button
+                      type="button"
                       variant="outline"
                       size="sm"
                       className="text-destructive"
+                      disabled={deleteMutation.isPending}
                       onClick={() => deleteMutation.mutate(u.id)}
                     >
                       <Trash2 className="h-4 w-4" />
