@@ -55,3 +55,10 @@ Thumbs.db
 .config/
 .replit
 replit.md
+
+# Dongjin local/generated
+database/
+artifacts/*-dongjin.zip
+artifacts/api-server.zip
+**/dist/
+**/node_modules/
